@@ -6,7 +6,7 @@ public record ItemCardapio(Long id, String nome, String descricao, CategoriaCard
                            BigDecimal precoComDesconto) {
 
     public enum CategoriaCardapio {
-        ENTRADAS, PRATO_PRINCIPAIS, BEBIDAS, SOBREMESAS;
+        ENTRADAS, PRATOS_PRINCIPAIS, BEBIDAS, SOBREMESAS;
     }
 
 }
