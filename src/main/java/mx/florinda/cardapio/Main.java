@@ -18,7 +18,6 @@ public class Main {
         for (ItemCardapio item : itens) {
             ItemCardapio.CategoriaCardapio categoria = item.categoria();
             categorias.add(categoria);
-
         }
 
         for (ItemCardapio.CategoriaCardapio categoria : categorias) {
@@ -30,7 +29,6 @@ public class Main {
                 .map(ItemCardapio::categoria)
                 .collect(Collectors.toCollection(()-> new TreeSet<>(compadorPorNome)))
                 .forEach(System.out::println);
-
 
         // saber quantos itens de cada categoria realmente tem no cardapio
         // Categoria => Quantidade
@@ -47,14 +45,27 @@ public class Main {
         }
 
         //TreeMap ou TreeSet segue a ordem para ordenar de forma natural da variável
-
         System.out.println(itensPorCategoria);
-
 
         System.out.println("--------Stream------");
         itens.stream()
                 .collect(Collectors.groupingBy(ItemCardapio::categoria, LinkedHashMap::new, Collectors.counting()))
                 .forEach((chave, valor) -> System.out.println(chave + " => " + valor));
+
+        itens.forEach(System.out::println);
+
+        System.out.println("--------------");
+        Optional<ItemCardapio> optionalItem = database.itemCardapioPorId(5l);
+        String mensagem = optionalItem.map(ItemCardapio::toString).orElse("Não encontrado!");
+        System.out.println(mensagem);
+
+        System.out.println("--------------");
+
+
+
+
+
+
 
     }
 }
