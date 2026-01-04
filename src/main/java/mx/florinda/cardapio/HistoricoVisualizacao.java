@@ -4,14 +4,14 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.WeakHashMap;
 
 public class HistoricoVisualizacao {
 
     private final Database database;
 
     //ItemCardapio => Data e Hora
-    private final Map<ItemCardapio, LocalDateTime> visualizacoes = new HashMap<>();
-
+    private final Map<ItemCardapio, LocalDateTime> visualizacoes = new WeakHashMap<>();
 
     public HistoricoVisualizacao(Database database) {
         this.database = database;
@@ -31,7 +31,6 @@ public class HistoricoVisualizacao {
         }
     }
 
-
     public void mostrarTotalItensVisualizados() {
 
         System.out.println("Total de itens visualizados: " + visualizacoes.size());
@@ -42,7 +41,7 @@ public class HistoricoVisualizacao {
             System.out.println("Nenhum item visualizado.");
             return;
         }else {
-            System.out.println("Histórico de Visualizações:");
+            System.out.println("Historico de Visualizacoes:");
             visualizacoes.forEach((item, hora)
                     -> System.out.printf("- %s em %s\n", item.nome(), hora));
             System.out.println();

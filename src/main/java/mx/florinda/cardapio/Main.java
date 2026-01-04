@@ -2,13 +2,14 @@ package mx.florinda.cardapio;
 
 //https://github.com/unipds-projetos/modulo1-fundamentos-java-extra-cardapio/tree/aula2-aprofundando-em-colecoes
 
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static mx.florinda.cardapio.ItemCardapio.CategoriaCardapio.*;
 
 public class Main {
-    static void main(String[] args) {
+    static void main(String[] args) throws InterruptedException {
 
         Database database = new Database();
         List<ItemCardapio> itens = database.listaDeItensCardapio();
@@ -84,16 +85,56 @@ public class Main {
         promocoes.put(ENTRADAS, "Comece sua refeição com um toque de sabor!");
         System.out.println(promocoes);
 
-        System.out.println("\n5 - Preciso de um histórico de visualização do cardápio:");
+        System.out.println("\n5 - Preciso de um histórico de visualizacao do cardapio:");
         HistoricoVisualizacao historico = new HistoricoVisualizacao(database);
-        historico.registrarVisualizacao(5l);
-        historico.registrarVisualizacao(1L);
+        historico.registrarVisualizacao(1l);
+        historico.registrarVisualizacao(2L);
         historico.registrarVisualizacao(4L);
         historico.registrarVisualizacao(6L);
 
         System.out.println("\n-------Visualizacoes-------");
         historico.mostrarTotalItensVisualizados();
         historico.listarVisualizacoes();
+
+        System.out.println("\n6 - Preciso remover um item do cardapio:");
+        Long idParaRemover = 1L;
+
+        boolean removido = database.removerItemCardapio(idParaRemover);
+        if(removido){
+            System.out.println("Item removido com sucesso: " + idParaRemover);
+        } else {
+            System.out.println("Item não encontrado: " + idParaRemover);
+        }
+
+        database.listaDeItensCardapio().forEach(System.out::println);
+
+        System.out.println("\n-------Visualizacoes Com Item Removido (WeakHashMap) -------");
+        // na classe HistoricoVisualizacoes onde "private final Map<ItemCardapio, LocalDateTime> visualizacoes = new HashMap<>()" utilizar o new WeakHashMap<>() com GC - Garbage Collection
+        // faz com que o metodo mostrarTotalItensVisualizados e listarVisualizacoes retornem os valores atualizados considerando o "remove" do metodo removerItemCardapio
+
+        System.out.println("Solicitando GC...");
+        System.gc();
+        Thread.sleep(500);
+
+        historico.mostrarTotalItensVisualizados();
+        historico.listarVisualizacoes();
+
+        System.out.println("7 - Preciso Alterar o Preco de um item do cardapio:");
+
+        ItemCardapio item1 = database.itemCardapioPorId(2L).orElseThrow();
+        System.out.printf("Id: %d - %s, preco anterior: R$ %s;\n", item1.id(), item1.nome(), item1.preco());
+
+        boolean alterado = database.alterarPrecoItemCardapio(2L, new BigDecimal("3.99"));
+        ItemCardapio item2 = database.itemCardapioPorId(2L).orElseThrow();
+        System.out.printf("Id: %d - %s, preco alterado R$ %s;\n", item2.id(), item2.nome(), item2.preco());
+
+        System.out.println("\n8 - Preciso auditar as mudancas de preco dos itens do cardapio:");
+        System.out.println("-----------IdentityHashMap-----------");
+        database.alterarPrecoItemCardapio(2L, new BigDecimal("2.99"));
+        database.alterarPrecoItemCardapio(2L, new BigDecimal("4.99"));
+
+        database.rastroAuditoriaPrecos();
+
 
 
 
