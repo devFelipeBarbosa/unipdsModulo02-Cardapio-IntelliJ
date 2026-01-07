@@ -7,7 +7,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Scanner;
 
-public class ClienteViaCep {
+public class ClienteItensCardapio {
 
     static void main(String[] args) throws Exception {
 
@@ -22,7 +22,9 @@ public class ClienteViaCep {
         }
 
         System.out.println("2 - Usando URI:");
-        URI uri = URI.create("https://viacep.com.br/ws/01001000/json/");
+        //URI uri = URI.create("https://viacep.com.br/ws/01001000/json/"); --> Utilizando ViaCEP Link Externo
+
+        URI uri = URI.create("http://localhost:8000/itensCardapio.json"); // Utilizando Servidor Local
 
         try(HttpClient httpClient = HttpClient.newHttpClient()){
             HttpRequest httpRequest = HttpRequest.newBuilder(uri).build();
