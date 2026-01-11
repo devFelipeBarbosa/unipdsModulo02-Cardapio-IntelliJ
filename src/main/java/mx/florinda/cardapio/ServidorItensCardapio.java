@@ -1,5 +1,6 @@
 package mx.florinda.cardapio;
 
+import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpServer;
 
 import java.io.IOException;
@@ -15,26 +16,22 @@ public class ServidorItensCardapio {
         HttpServer httpServer = HttpServer.create(inetSocketAddress, 0);
 
         httpServer.createContext("/itensCardapio.json", exchange -> {
-            try {
-                Path path = Path.of("itensCardapio.json");
-                String json = Files.readString(path);
-                byte[] bytes = json.getBytes();
 
-                exchange.getResponseHeaders().add("Content-Type", "application/json");
-                exchange.sendResponseHeaders(200, bytes.length);
+            Path path = Path.of("itensCardapio.json");
+            String json = Files.readString(path);
+            byte[] bytes = json.getBytes();
 
-                OutputStream responseBody = exchange.getResponseBody();
-                responseBody.write(bytes);
-                responseBody.close();
+            Headers responseHeaders = exchange.getResponseHeaders();
+            responseHeaders.set("Content-Type", "application/json");
 
-            } catch (IOException e) {
-                exchange.sendResponseHeaders(500, 0);
-                exchange.getResponseBody().close();
-                e.printStackTrace();
-            }
+            exchange.sendResponseHeaders(200, bytes.length);
+
+            OutputStream responseBody = exchange.getResponseBody();
+            responseBody.write(bytes);
+
         });
 
-        System.out.println("Subiu servidor http!");
+        System.out.println("Subiu servidor http: 127.0.0.1 ou localhost:8000/itensCardapio.json!");
         httpServer.start();
     }
 }
