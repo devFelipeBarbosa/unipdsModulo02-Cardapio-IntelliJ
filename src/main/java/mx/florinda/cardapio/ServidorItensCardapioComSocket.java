@@ -92,6 +92,7 @@ public class ServidorItensCardapioComSocket {
                 Gson gson = new Gson();
                 String json = gson.toJson(ListaItensCardapios);
 
+
                 clientOut.println("HTTP/1.1 200 OK");
                 clientOut.println("Content-Type: application/json; charset=UTF-8");
                 clientOut.println();
@@ -123,6 +124,8 @@ public class ServidorItensCardapioComSocket {
                 String body = requestChunks[1];
                 Gson gson = new Gson();
                 ItemCardapio novoItemCardapio = gson.fromJson(body, ItemCardapio.class);
+                System.out.println(novoItemCardapio );
+
                 database.adicionaItemCardapio(novoItemCardapio);
 
                 clientOut.println("HTTP/1.1 201 Created");
