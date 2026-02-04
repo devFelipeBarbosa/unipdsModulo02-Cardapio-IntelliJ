@@ -12,8 +12,12 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class ServidorItensCardapioComSocket {
+
+    private static final Logger logger = Logger.getLogger(ServidorItensCardapioComSocket.class.getName());
     private static final Database database = new SQLDatabase();
 
     public static void main(String[] args) throws Exception {
@@ -21,7 +25,7 @@ public class ServidorItensCardapioComSocket {
         try (ExecutorService executorService = Executors.newFixedThreadPool(50)) {
 
             try (ServerSocket serverSocket = new ServerSocket(8000)) {
-                System.out.println("Servidor Iniciado!");
+                logger.info("Servidor Iniciado!");
 
                 while (true) {
                     Socket clientSocket = serverSocket.accept();
@@ -33,7 +37,7 @@ public class ServidorItensCardapioComSocket {
     }
 
     private static void trataRequisicao(Socket clientSocket) {
-        try (clientSocket){
+        try (clientSocket) {
 
             InputStream clientIS = clientSocket.getInputStream();
 
@@ -48,9 +52,9 @@ public class ServidorItensCardapioComSocket {
             } while (clientIS.available() > 0);
 
             String request = requestBuilder.toString();
-            System.out.println("------------------------");
-            System.out.println(request);
-            System.out.println("\n\nChegou um novo request");
+
+            logger.finest(request);
+            logger.fine("\n\nChegou um novo request");
 
             Thread.sleep(250);
 
@@ -62,80 +66,88 @@ public class ServidorItensCardapioComSocket {
 
             String method = requestLineChunks[0];
             String requestURI = requestLineChunks[1];
+            String httpVersion = requestLineChunks[2];
 
-            System.out.println(method);
-            System.out.println(requestURI);
+            logger.finer(() -> "Method: " + method);
+            logger.finer(() -> "Request URI: " + requestURI);
+            logger.finer(() -> "HTTP Version: " + httpVersion);
+
+            Thread.sleep(250);
 
             OutputStream clientOS = clientSocket.getOutputStream();
             PrintStream clientOut = new PrintStream(clientOS);
 
-            if(method.equals("GET") && requestURI.equals("/itensCardapio.json")) {
+            try {
 
-                System.out.println("Chamou arquivo Json");
+                if ("/itensCardapio.json".equals(requestURI)) {
 
-                Path path = Path.of("itensCardapio.json");
-                String json = Files.readString(path);
+                    logger.fine("Chamou arquivo itensCardapio.json");
 
-                clientOut.println("HTTP/1.1 200 OK");
-                clientOut.println("Content-Type: application/json; charset=UTF-8");
-                clientOut.println();
-                clientOut.println(json);
+                    Path path = Path.of("itensCardapio.json");
+                    String json = Files.readString(path);
 
-            } else if (method.equals("GET") && requestURI.equals("/itens-cardapio")){
+                    clientOut.println("HTTP/1.1 200 OK");
+                    clientOut.println("Content-Type: application/json; charset=UTF-8");
+                    clientOut.println();
+                    clientOut.println(json);
 
-                System.out.println("Chamou listagem de itens de Cardapio");
+                } else if ("GET".equals(method) && "/itens-cardapio".equals(requestURI)) {
 
-                List<ItemCardapio> ListaItensCardapios = database.listaDeItensCardapio();
+                    logger.fine("Chamou listagem de itens de Cardapio");
+                    List<ItemCardapio> ListaItensCardapios = database.listaDeItensCardapio();
 
-                Gson gson = new Gson();
-                String json = gson.toJson(ListaItensCardapios);
+                    Gson gson = new Gson();
+                    String json = gson.toJson(ListaItensCardapios);
 
+                    clientOut.println("HTTP/1.1 200 OK");
+                    clientOut.println("Content-Type: application/json; charset=UTF-8");
+                    clientOut.println();
+                    clientOut.println(json);
 
-                clientOut.println("HTTP/1.1 200 OK");
-                clientOut.println("Content-Type: application/json; charset=UTF-8");
-                clientOut.println();
-                clientOut.println(json);
+                } else if ("GET".equals(method) && "/itens-cardapio/total".equals(requestURI)) {
 
-            } else if (method.equals("GET") && requestURI.equals("/itens-cardapio/total")){
+                    logger.fine("Chamou total de itens de Cardapio");
+                    int totalItens = database.totalItensCardapio();
 
-                System.out.println("Chamou total de itens de Cardapio");
+                    clientOut.println("HTTP/1.1 200 OK");
+                    clientOut.println();
+                    clientOut.println(totalItens);
 
-                List<ItemCardapio> ListaItensCardapios = database.listaDeItensCardapio();
+                } else if ("POST".equals(method) && "/itens-cardapio".equals(requestURI)) {
 
+                    logger.fine("Chamou adição de item de Cardapio");
 
-                clientOut.println("HTTP/1.1 200 OK");
-                clientOut.println("Content-Type: application/json; charset=UTF-8");
-                clientOut.println();
-                clientOut.println(ListaItensCardapios.size());
+                    //curl -v -X POST -d '{"id":20,"nome":"Item 20","descricao":"Item 20.","categoria":"BEBIDAS","preco":2.99}' -H 'Content-Type: application/json' http://localhost:8000/itens-cardapio
 
-            } else if (method.equals("POST") && requestURI.equals("/itens-cardapio")){
+                    if (requestChunks.length == 1) {
+                        clientOut.println("HTTP/1.1 400 Bad Request");
+                        return;
+                    }
 
-                System.out.println("Chamou adição de item de Cardapio");
+                    String body = requestChunks[1];
 
-                //curl -v -X POST -d '{"id":20,"nome":"Item 20","descricao":"Item 20.","categoria":"BEBIDAS","preco":2.99}' -H 'Content-Type: application/json' http://localhost:8000/itens-cardapio
+                    Gson gson = new Gson();
+                    ItemCardapio novoItemCardapio = gson.fromJson(body, ItemCardapio.class);
 
-                if (requestChunks.length == 1){
-                    clientOut.println("HTTP/1.1 400 Bad Request");
-                    return;
+                    database.adicionaItemCardapio(novoItemCardapio);
+                    clientOut.println("HTTP/1.1 201 Created");
+
+                } else {
+                    logger.warning(() -> "URI não encontrada: " + requestURI);
+                    clientOut.println("HTTP/1.1 404 Not Found");
                 }
+            } catch (Exception ex) {
+                logger.log(Level.SEVERE, ex, () -> "Erro ao tratar " + method + " " + requestURI);
 
-                String body = requestChunks[1];
-                Gson gson = new Gson();
-                ItemCardapio novoItemCardapio = gson.fromJson(body, ItemCardapio.class);
-                System.out.println(novoItemCardapio );
-
-                database.adicionaItemCardapio(novoItemCardapio);
-
-                clientOut.println("HTTP/1.1 201 Created");
-
-
-            } else {
-                System.out.println("URI não encontrada: " + requestURI);
-                clientOut.println("HTTP/1.1 404 Not Found");
+                clientOut.println("HTTP/1.1 500 Internal Server Error");
+                clientOut.println();
+                clientOut.println(ex.getMessage());
             }
 
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        } catch (Exception ex) {
+            //logger.severe("Erro no servidor" + ex.getMessage());
+            logger.log(Level.SEVERE, "Erro no servidor", ex);
+            throw new RuntimeException(ex);
         }
     }
 }
